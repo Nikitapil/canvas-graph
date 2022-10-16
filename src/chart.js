@@ -11,6 +11,7 @@ const PADDING = 40
 const VIEW_HEIGHT = DPI_HEIGHT - PADDING*2
 const VIEW_WIDTH = DPI_WIDTH
 const ROWS_COUNT = 5
+const SPEED = 1500
 
 
 export function chart(root, data) {
@@ -19,6 +20,7 @@ export function chart(root, data) {
     const tip = tooltip(root.querySelector('[data-el="tooltip"]'))
     const slider = sliderChart(root.querySelector('[data-el="slider"]'), data, DPI_WIDTH)
     let raf;
+    let prevMax;
     canvas.width = DPI_WIDTH
     canvas.height = DPI_HEIGHT
     css(canvas, {
@@ -61,6 +63,22 @@ export function chart(root, data) {
         ctx.clearRect(0, 0, DPI_WIDTH, DPI_HEIGHT)
     }
 
+    function getMax(yMax) {
+        const step = (yMax - prevMax) / SPEED
+
+        if (proxy.max < yMax) {
+            proxy.max +=step
+        } else if (proxy.max > yMax) {
+            proxy.max = yMax
+            prevMax = yMax
+        }
+
+        return proxy.max
+    }
+
+    function translateX(length, xRatio, left) {
+        return -1 * Math.round((left * length * xRatio) / 100)
+    }
 
     function paint() {
         clear()
@@ -79,22 +97,30 @@ export function chart(root, data) {
 
         const [yMin, yMax] = computeBoundaries({columns, types: data.types})
 
-        const yRatio = computeYRatio(VIEW_HEIGHT, yMax, yMin)
+
+        if(!prevMax)  {
+            prevMax = yMax
+            proxy.max = yMax
+        }
+
+        const max = getMax(yMax)
+        const yRatio = computeYRatio(VIEW_HEIGHT, max, yMin)
         const xRatio = computeXRatio(VIEW_WIDTH, columns[0].length)
 
-        const yData = columns.filter(col => data.types[col[0]] === 'line');
-        const xData = columns.filter(col => data.types[col[0]] !== 'line')[0]
+        const translate = translateX(data.columns[0].length, xRatio, proxy.pos[0])
+        const yData = data.columns.filter(col => data.types[col[0]] === 'line');
+        const xData = data.columns.filter(col => data.types[col[0]] !== 'line')[0]
 
 
-        yAxis(yMin, yMax)
+        yAxis(yMin, max)
         xAxis(xData, xRatio, yData)
 
         yData.map(toCoords(xRatio, yRatio, DPI_HEIGHT, PADDING, yMin)).forEach((coords, idx) => {
             const color = data.colors[yData[idx][0]]
-            line(ctx, coords, {color})
+            line(ctx, coords, {color, translate})
             for (const [x, y] of coords) {
                 if (isOver(proxy.mouse, x, coords.length, DPI_WIDTH)) {
-                    circle(ctx, [x, y])
+                    circle(ctx, [x, y], color)
                     break
                 }
             }

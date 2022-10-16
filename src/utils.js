@@ -33,23 +33,25 @@ export function isOver(mouse, x, length, dWidth) {
     return Math.abs(x - mouse.x) < width / 2
 }
 
-export function line(ctx, coords, {color}) {
+export function line(ctx, coords, {color, translate}) {
     ctx.beginPath()
-    // ctx.save()
+    ctx.save()
     ctx.lineWidth = 4;
-    // ctx.translate(translate, 0)
+    ctx.translate(translate, 0)
     ctx.strokeStyle = color
     for (const [x, y] of coords) {
         ctx.lineTo(x, y)
     }
     ctx.stroke()
-    // ctx.restore()
+    ctx.restore()
     ctx.closePath()
 }
 
-export function circle(ctx, [x, y]) {
+export function circle(ctx, [x, y], color) {
     const CIRCLE_RADIUS = 8
     ctx.beginPath()
+    ctx.strokeStyle = color
+    ctx.lineWidth = 3;
     ctx.arc(x, y, CIRCLE_RADIUS, 0, Math.PI * 2)
     ctx.stroke()
     ctx.closePath()
