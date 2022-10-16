@@ -1,3 +1,11 @@
+export function computeYRatio (height, max, min) {
+    return  (max - min) / height
+}
+
+export function computeXRatio(width, length) {
+    return width / (length - 2)
+}
+
 export function toDate(timestamp) {
     const shortMonth = [
         'Jan',
@@ -27,12 +35,15 @@ export function isOver(mouse, x, length, dWidth) {
 
 export function line(ctx, coords, {color}) {
     ctx.beginPath()
+    // ctx.save()
     ctx.lineWidth = 4;
+    // ctx.translate(translate, 0)
     ctx.strokeStyle = color
     for (const [x, y] of coords) {
         ctx.lineTo(x, y)
     }
     ctx.stroke()
+    // ctx.restore()
     ctx.closePath()
 }
 
@@ -71,3 +82,11 @@ export function computeBoundaries({columns, types}) {
 export function css(el, styles = {}) {
     Object.assign(el.style, styles)
 }
+
+export function toCoords(xRatio, yRatio, DPI_HEIGHT, PADDING, yMin) {
+    return (col) => col.map((y, idx) => {
+        return [Math.floor((idx - 1) * xRatio), Math.floor(DPI_HEIGHT - PADDING - (y - yMin) / yRatio)]
+    }).slice(1)
+}
+
+export function noop () {}

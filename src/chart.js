@@ -1,6 +1,7 @@
 import './styles.scss'
-import {circle, computeBoundaries, css, isOver, line, toDate} from "./utils";
+import {circle, computeBoundaries, computeXRatio, computeYRatio, css, isOver, line, toCoords, toDate} from "./utils";
 import {tooltip} from "./tooltip";
+import {sliderChart} from "./slider";
 
 const WIDTH = 600
 const HEIGHT = 200
@@ -13,9 +14,10 @@ const ROWS_COUNT = 5
 
 
 export function chart(root, data) {
-    const canvas = root.querySelector('canvas')
+    const canvas = root.querySelector('[data-el="main"]')
     const ctx = canvas.getContext('2d')
     const tip = tooltip(root.querySelector('[data-el="tooltip"]'))
+    const slider = sliderChart(root.querySelector('[data-el="slider"]'), data, DPI_WIDTH)
     let raf;
     canvas.width = DPI_WIDTH
     canvas.height = DPI_HEIGHT
@@ -33,6 +35,10 @@ export function chart(root, data) {
             raf = requestAnimationFrame(paint)
             return result
         }
+    })
+
+    slider.subscribe(pos => {
+        proxy.pos = pos
     })
 
     function mousemove({clientX, clientY}) {
@@ -55,19 +61,35 @@ export function chart(root, data) {
         ctx.clearRect(0, 0, DPI_WIDTH, DPI_HEIGHT)
     }
 
+
     function paint() {
         clear()
-        const [yMin, yMax] = computeBoundaries(data)
-        const yRatio = VIEW_HEIGHT / (yMax - yMin)
-        const xRatio = VIEW_WIDTH / (data.columns[0].length - 2)
+        const length = data.columns[0].length
+        const leftIndex = Math.round((length * proxy.pos[0]) / 100)
+        const rightIndex = Math.round((length * proxy.pos[1]) / 100)
 
-        const yData = data.columns.filter(col => data.types[col[0]] === 'line');
-        const xData = data.columns.filter(col => data.types[col[0]] !== 'line')[0]
+        const columns = data.columns.map(col => {
+            const res = col.slice(leftIndex, rightIndex)
+            if (typeof res[0] !== 'string') {
+                res.unshift(col[0])
+            }
+            return res
+        })
+
+
+        const [yMin, yMax] = computeBoundaries({columns, types: data.types})
+
+        const yRatio = computeYRatio(VIEW_HEIGHT, yMax, yMin)
+        const xRatio = computeXRatio(VIEW_WIDTH, columns[0].length)
+
+        const yData = columns.filter(col => data.types[col[0]] === 'line');
+        const xData = columns.filter(col => data.types[col[0]] !== 'line')[0]
+
 
         yAxis(yMin, yMax)
         xAxis(xData, xRatio, yData)
 
-        yData.map(toCoords(xRatio, yRatio)).forEach((coords, idx) => {
+        yData.map(toCoords(xRatio, yRatio, DPI_HEIGHT, PADDING, yMin)).forEach((coords, idx) => {
             const color = data.colors[yData[idx][0]]
             line(ctx, coords, {color})
             for (const [x, y] of coords) {
@@ -139,8 +161,3 @@ export function chart(root, data) {
     }
 }
 
-function toCoords(xRatio, yRatio) {
-    return (col) => col.map((y, idx) => {
-        return [Math.floor((idx - 1) * xRatio), Math.floor(DPI_HEIGHT - PADDING - y*yRatio)]
-    }).slice(1)
-}
