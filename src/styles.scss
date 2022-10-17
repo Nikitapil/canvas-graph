@@ -132,4 +132,39 @@ body {
       }
     }
   }
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    align-items: center;
+
+    label {
+      cursor: pointer;
+    }
+
+    &__item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    &__checkbox {
+      display: none;
+    }
+    &__checkbox-fake {
+      width: 20px;
+      height: 20px;
+      border: 1px solid black;
+      border-radius: 5px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+  .filters__checkbox:checked + .filters__checkbox-fake {
+    &:before {
+      content: '\2714';
+    }
+  }
 }

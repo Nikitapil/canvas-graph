@@ -122,15 +122,24 @@ export function sliderChart(root, data, DPI_WIDTH) {
     const xRatio = computeXRatio(DPI_WIDTH, data.columns[0].length)
     const yData = data.columns.filter(col => data.types[col[0]] === 'line');
 
-    yData.map(toCoords(xRatio, yRatio, DPI_HEIGHT, -5, yMin)).forEach((coords, idx) => {
-        const color = data.colors[yData[idx][0]]
-        line(ctx, coords, {color})
-    })
+    function draw(internalData) {
+        ctx.clearRect(0, 0, DPI_WIDTH, DPI_HEIGHT)
+        internalData.map(toCoords(xRatio, yRatio, DPI_HEIGHT, -5, yMin)).forEach((coords, idx) => {
+            const color = data.colors[internalData[idx][0]]
+            line(ctx, coords, {color})
+        })
+    }
+
+    draw(yData)
+
 
     return {
         subscribe(fn) {
             nextFn = fn
             fn(getPosition())
+        },
+        render(newData) {
+            draw(newData)
         }
     }
 }

@@ -2,6 +2,7 @@ import './styles.scss'
 import {circle, computeBoundaries, computeXRatio, computeYRatio, css, isOver, line, toCoords, toDate} from "./utils";
 import {tooltip} from "./tooltip";
 import {sliderChart} from "./slider";
+import {Filters} from "./Filters";
 
 const WIDTH = 600
 const HEIGHT = 200
@@ -11,7 +12,7 @@ const PADDING = 40
 const VIEW_HEIGHT = DPI_HEIGHT - PADDING*2
 const VIEW_WIDTH = DPI_WIDTH
 const ROWS_COUNT = 5
-const SPEED = 1500
+const SPEED = 0
 
 
 export function chart(root, data) {
@@ -19,6 +20,7 @@ export function chart(root, data) {
     const ctx = canvas.getContext('2d')
     const tip = tooltip(root.querySelector('[data-el="tooltip"]'))
     const slider = sliderChart(root.querySelector('[data-el="slider"]'), data, DPI_WIDTH)
+    const filters = new Filters(root, data)
     let raf;
     let prevMax;
     canvas.width = DPI_WIDTH
@@ -43,10 +45,15 @@ export function chart(root, data) {
         proxy.pos = pos
     })
 
+    filters.subscribe(checkedData => {
+        proxy.checkedData = checkedData
+    })
+
+
     function mousemove({clientX, clientY}) {
         const { left, top } = canvas.getBoundingClientRect()
         proxy.mouse = {
-            x: (clientX - left) * 2,
+            x: (clientX - left) * (2),
             tooltip: {
                 left: clientX - left,
                 top: clientY - top
@@ -108,10 +115,9 @@ export function chart(root, data) {
         const xRatio = computeXRatio(VIEW_WIDTH, columns[0].length)
 
         const translate = translateX(data.columns[0].length, xRatio, proxy.pos[0])
-        const yData = data.columns.filter(col => data.types[col[0]] === 'line');
+        const yData = data.columns.filter(col => data.types[col[0]] === 'line' && proxy.checkedData.includes(col[0]));
         const xData = data.columns.filter(col => data.types[col[0]] !== 'line')[0]
-
-
+        slider.render(yData)
         yAxis(yMin, max)
         xAxis(xData, xRatio, yData)
 
@@ -125,6 +131,7 @@ export function chart(root, data) {
                 }
             }
         })
+        console.log(proxy)
     }
 
     function xAxis( xData, xRatio, yData) {
